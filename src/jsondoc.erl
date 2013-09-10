@@ -24,6 +24,7 @@
 	decode/1,
 	get_value/2,
 	set_value/3,
+	get_names/1,
 	has_name/2,
 	delete_name/2,
 	string_to_utf8/1,
@@ -36,8 +37,7 @@ new() -> {[]}.
 
 encode(Doc) ->
 	try jiffy:encode(Doc)
-	catch 
-		_:{error, invalid_string} -> jiffy:encode(to_utf8(Doc))
+	catch _:{error, invalid_string} -> jiffy:encode(to_utf8(Doc))
 	end.
 
 decode(Doc) when is_binary(Doc) ->
@@ -51,6 +51,9 @@ get_value(Name, {PropList}) when (is_binary(Name) orelse is_atom(Name)) andalso 
 
 set_value({PropList}, Name, Value) when is_list(PropList) andalso (is_binary(Name) orelse is_atom(Name)) ->
 	{lists:keystore(Name, 1, PropList, {Name, Value})}.
+
+get_names({PropList}) when is_list(PropList) ->
+	proplists:get_keys(PropList).
 
 has_name(Name, {PropList}) when (is_binary(Name) orelse is_atom(Name)) andalso is_list(PropList) ->
 	lists:keymember(Name, 1, PropList).
@@ -89,28 +92,60 @@ is_name_value(_) -> false.
 to_proplist([], OutList) -> OutList;
 to_proplist([Tuple|T], OutList) ->
 	{Key, Value} = Tuple,
-	case is_jsondoc(Value) of
+	NewOutList = case is_jsondoc(Value) of
 		true -> 
 			NewPropList = to_proplist(Value),
-			NewOutList = lists:keystore(Key, 1, OutList, {Key, NewPropList}),
-			to_proplist(T, NewOutList);			
-		false ->
-			NewOutList = lists:keystore(Key, 1, OutList, Tuple),
-			to_proplist(T, NewOutList)
-	end.
+			lists:keystore(Key, 1, OutList, {Key, NewPropList});	
+		_ ->
+			case is_list(Value) of
+				true -> 
+					NewArray = array_to_proplist(Value, []),
+					lists:keystore(Key, 1, OutList, {Key, NewArray});
+				_ -> lists:keystore(Key, 1, OutList, Tuple)
+			end
+	end,
+	to_proplist(T, NewOutList).
+
+array_to_proplist([], OutList) -> lists:reverse(OutList);
+array_to_proplist([H|T], OutList) ->
+	Value = case is_jsondoc(H) of
+		true ->	to_proplist(H);
+		_ -> 
+			case is_list(H) of
+				true -> array_to_proplist(H, []);
+				_ -> H
+			end
+	end,
+	array_to_proplist(T, [Value|OutList]).
 
 from_proplist([], OutList) -> OutList;
 from_proplist([Tuple|T], OutList) ->
 	{Key, Value} = Tuple,
-	case is_proplist(Value) of
+	NewOutList = case is_proplist(Value) of
 		true -> 
 			NewDoc = from_proplist(Value),
-			NewOutList = lists:keystore(Key, 1, OutList, {Key, NewDoc}),
-			from_proplist(T, NewOutList);			
-		false ->
-			NewOutList = lists:keystore(Key, 1, OutList, Tuple),
-			from_proplist(T, NewOutList)
-	end.
+			lists:keystore(Key, 1, OutList, {Key, NewDoc});		
+		_ ->
+			case is_list(Value) of
+				true ->
+					NewArray = array_from_proplist(Value, []),
+					lists:keystore(Key, 1, OutList, {Key, NewArray});	
+				_ -> lists:keystore(Key, 1, OutList, Tuple)
+			end
+	end,
+	from_proplist(T, NewOutList).
+
+array_from_proplist([], OutList) -> lists:reverse(OutList);
+array_from_proplist([H|T], OutList) ->
+	Value = case is_proplist(H) of
+		true ->	from_proplist(H);
+		_ -> 
+			case is_list(H) of
+				true -> array_from_proplist(H, []);
+				_ -> H
+			end
+	end,
+	array_from_proplist(T, [Value|OutList]).
 
 to_utf8(Doc) when is_binary(Doc) -> string_to_utf8(Doc);
 to_utf8(Doc) when is_list(Doc) -> array_to_utf8(Doc, []);
