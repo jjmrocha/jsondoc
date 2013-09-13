@@ -41,6 +41,8 @@ encode(Doc) ->
 	end.
 
 decode(Doc) when is_binary(Doc) ->
+	jiffy:decode(Doc);
+decode(Doc) when is_list(Doc) ->
 	jiffy:decode(Doc).
 
 get_value(Name, {PropList}) when (is_binary(Name) orelse is_atom(Name)) andalso is_list(PropList) ->
