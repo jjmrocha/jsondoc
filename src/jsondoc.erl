@@ -28,10 +28,13 @@
 	has_name/2,
 	delete_name/2,
 	string_to_utf8/1,
+	string_from_utf8/1,
 	from_proplist/1,
 	to_proplist/1,
 	is_jsondoc/1,
-	is_proplist/1]).
+	is_proplist/1,
+	to_utf8/1,
+	from_utf8/1]).
 
 new() -> {[]}.
 
@@ -68,6 +71,12 @@ string_to_utf8(Value) when is_list(Value) ->
 string_to_utf8(Value) when is_binary(Value) ->
 	string_to_utf8(binary_to_list(Value)).
 
+string_from_utf8(Value) when is_binary(Value) ->
+	UTF8 = unicode:characters_to_list(Value),
+	list_to_binary(UTF8);
+string_from_utf8(Value) when is_list(Value) ->
+	string_from_utf8(list_to_binary(Value)).
+
 from_proplist(PropList) when is_list(PropList) ->
 	{from_proplist(PropList, [])}.
 
@@ -83,6 +92,28 @@ is_proplist(Doc) when is_list(Doc) andalso length(Doc) > 0 ->
 	[First|_] = Doc,
 	is_name_value(First);
 is_proplist(_) -> false.
+
+to_utf8(Doc) when is_binary(Doc) -> string_to_utf8(Doc);
+to_utf8(Doc) when is_list(Doc) -> array_to_utf8(Doc, []);
+to_utf8(Doc) ->
+	case is_jsondoc(Doc) of
+		true ->
+			{PropList} = Doc,
+			JSonDoc = new(),
+			to_utf8(PropList, JSonDoc);
+		false -> Doc
+	end.
+
+from_utf8(Doc) when is_binary(Doc) -> string_from_utf8(Doc);
+from_utf8(Doc) when is_list(Doc) -> array_from_utf8(Doc, []);
+from_utf8(Doc) ->
+	case is_jsondoc(Doc) of
+		true ->
+			{PropList} = Doc,
+			JSonDoc = new(),
+			from_utf8(PropList, JSonDoc);
+		false -> Doc
+	end.
 
 %% ====================================================================
 %% Internal functions
@@ -149,17 +180,6 @@ array_from_proplist([H|T], OutList) ->
 	end,
 	array_from_proplist(T, [Value|OutList]).
 
-to_utf8(Doc) when is_binary(Doc) -> string_to_utf8(Doc);
-to_utf8(Doc) when is_list(Doc) -> array_to_utf8(Doc, []);
-to_utf8(Doc) ->
-	case is_jsondoc(Doc) of
-		true ->
-			{PropList} = Doc,
-			JSonDoc = new(),
-			to_utf8(PropList, JSonDoc);
-		false -> Doc
-	end.
-
 to_utf8([], OutDoc) -> OutDoc;
 to_utf8([Tuple|T], OutDoc) ->
 	{Key, Value} = Tuple,
@@ -172,3 +192,16 @@ array_to_utf8([H|T], OutList) when is_binary(H) ->
 	Utf8 = string_to_utf8(H),
 	array_to_utf8(T, [Utf8|OutList]);
 array_to_utf8([H|T], OutList) -> array_to_utf8(T, [H|OutList]).
+
+from_utf8([], OutDoc) -> OutDoc;
+from_utf8([Tuple|T], OutDoc) ->
+	{Key, Value} = Tuple,
+	NewValue = from_utf8(Value),
+	NewOutDoc = set_value(OutDoc, Key, NewValue),
+	from_utf8(T, NewOutDoc).
+
+array_from_utf8([], OutList) -> lists:reverse(OutList);
+array_from_utf8([H|T], OutList) when is_binary(H) ->
+	Utf8 = string_from_utf8(H),
+	array_from_utf8(T, [Utf8|OutList]);
+array_from_utf8([H|T], OutList) -> array_from_utf8(T, [H|OutList]).
