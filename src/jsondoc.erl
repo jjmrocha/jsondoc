@@ -16,6 +16,12 @@
 
 -module(jsondoc).
 
+-type jsondoc_name() :: atom() | binary().
+-type jsondoc() :: {[{jsondoc_name(), any()}, ...]}.
+
+-export_type([jsondoc/0,
+			  jsondoc_name/0]).
+
 %% ====================================================================
 %% API functions
 %% ====================================================================
@@ -36,63 +42,78 @@
 	to_utf8/1,
 	from_utf8/1]).
 
+-spec new() -> jsondoc().
 new() -> {[]}.
 
+-spec encode(Doc :: jsondoc()) -> binary().
 encode(Doc) ->
 	try jiffy:encode(Doc)
 	catch _:{error, invalid_string} -> jiffy:encode(to_utf8(Doc))
 	end.
 
+-spec decode(Doc :: iolist()) -> jsondoc().
 decode(Doc) when is_binary(Doc) ->
 	jiffy:decode(Doc);
 decode(Doc) when is_list(Doc) ->
 	jiffy:decode(Doc).
 
-get_value(Name, {PropList}) when (is_binary(Name) orelse is_atom(Name)) andalso is_list(PropList) ->
+-spec get_value(Name :: jsondoc_name(), Doc :: jsondoc()) -> undefined | any().
+get_value(Name, {PropList}) ->
 	case lists:keyfind(Name, 1, PropList) of
 		false -> undefined;
 		{_, Value} -> Value
 	end.
 
-set_value({PropList}, Name, Value) when is_list(PropList) andalso (is_binary(Name) orelse is_atom(Name)) ->
+-spec set_value(Doc :: jsondoc(), Name :: jsondoc_name(), Value :: any()) -> jsondoc().
+set_value({PropList}, Name, Value) ->
 	{lists:keystore(Name, 1, PropList, {Name, Value})}.
 
-get_names({PropList}) when is_list(PropList) ->
+-spec get_names(Doc :: jsondoc()) -> [jsondoc_name(), ...].
+get_names({PropList}) ->
 	proplists:get_keys(PropList).
 
-has_name(Name, {PropList}) when (is_binary(Name) orelse is_atom(Name)) andalso is_list(PropList) ->
+-spec has_name(Name :: jsondoc_name(), Doc :: jsondoc()) -> boolean().
+has_name(Name, {PropList}) ->
 	lists:keymember(Name, 1, PropList).
 
-delete_name({PropList}, Name) when is_list(PropList) andalso (is_binary(Name) orelse is_atom(Name)) ->
+-spec delete_name(Doc :: jsondoc(), Name :: jsondoc_name()) -> jsondoc().
+delete_name({PropList}, Name) ->
 	{lists:keydelete(Name, 1, PropList)}.
 
+-spec string_to_utf8(Value :: iolist()) -> binary().
 string_to_utf8(Value) when is_list(Value) ->
 	unicode:characters_to_binary(Value);
 string_to_utf8(Value) when is_binary(Value) ->
 	string_to_utf8(binary_to_list(Value)).
 
+-spec string_from_utf8(Value :: iolist()) -> binary().
 string_from_utf8(Value) when is_binary(Value) ->
 	UTF8 = unicode:characters_to_list(Value),
 	list_to_binary(UTF8);
 string_from_utf8(Value) when is_list(Value) ->
 	string_from_utf8(list_to_binary(Value)).
 
-from_proplist(PropList) when is_list(PropList) ->
+-spec from_proplist(PropList :: [{jsondoc_name(), any()}, ...]) -> jsondoc().
+from_proplist(PropList) ->
 	{from_proplist(PropList, [])}.
 
-to_proplist({PropList}) when is_list(PropList) ->
+-spec to_proplist(Doc :: jsondoc()) -> [{jsondoc_name(), any()}, ...].
+to_proplist({PropList}) ->
 	to_proplist(PropList, []).
 
+-spec is_jsondoc(Doc :: any()) -> boolean().
 is_jsondoc(Doc) when is_tuple(Doc) andalso tuple_size(Doc) == 1 ->
 	{InnerDoc} = Doc,
 	is_proplist(InnerDoc);
 is_jsondoc(_) -> false.
 
+-spec is_proplist(Doc :: any()) -> boolean().
 is_proplist(Doc) when is_list(Doc) andalso length(Doc) > 0 ->
 	[First|_] = Doc,
 	is_name_value(First);
 is_proplist(_) -> false.
 
+-spec to_utf8(Value :: any()) -> any().
 to_utf8(Doc) when is_binary(Doc) -> string_to_utf8(Doc);
 to_utf8(Doc) when is_list(Doc) -> array_to_utf8(Doc, []);
 to_utf8(Doc) ->
@@ -104,6 +125,7 @@ to_utf8(Doc) ->
 		false -> Doc
 	end.
 
+-spec from_utf8(Value :: any()) -> any().
 from_utf8(Doc) when is_binary(Doc) -> string_from_utf8(Doc);
 from_utf8(Doc) when is_list(Doc) -> array_from_utf8(Doc, []);
 from_utf8(Doc) ->
