@@ -17,10 +17,12 @@
 -module(jsondoc).
 
 -type jsondoc_name() :: atom() | binary().
--type jsondoc() :: {[{jsondoc_name(), any()}, ...]}.
+-type proplist() :: [{jsondoc_name(), any()}, ...].
+-type jsondoc() :: {proplist()}.
 
 -export_type([jsondoc/0,
-			  jsondoc_name/0]).
+			  jsondoc_name/0,
+			  proplist/0]).
 
 %% ====================================================================
 %% API functions
@@ -29,7 +31,9 @@
 	encode/1,
 	decode/1,
 	get_value/2,
+	get_value/3,
 	set_value/3,
+	set_values/2,
 	get_names/1,
 	has_name/2,
 	delete_name/2,
@@ -64,9 +68,22 @@ get_value(Name, {PropList}) ->
 		{_, Value} -> Value
 	end.
 
+-spec get_value(Name :: jsondoc_name(), Doc :: jsondoc(), Default :: any()) -> any().
+get_value(Name, {PropList}, Default) ->
+	case lists:keyfind(Name, 1, PropList) of
+		false -> Default;
+		{_, Value} -> Value
+	end.
+
 -spec set_value(Doc :: jsondoc(), Name :: jsondoc_name(), Value :: any()) -> jsondoc().
 set_value({PropList}, Name, Value) ->
 	{lists:keystore(Name, 1, PropList, {Name, Value})}.
+
+-spec set_values(Doc :: jsondoc(), Values :: proplist()) -> jsondoc().
+set_values(Doc, []) -> Doc;
+set_values(Doc, [{Field, Value}|T]) ->
+	Doc1 = set_value(Doc, Field, Value),
+	set_values(Doc1, T).
 
 -spec get_names(Doc :: jsondoc()) -> [jsondoc_name(), ...].
 get_names({PropList}) ->
@@ -93,11 +110,11 @@ string_from_utf8(Value) when is_binary(Value) ->
 string_from_utf8(Value) when is_list(Value) ->
 	string_from_utf8(list_to_binary(Value)).
 
--spec from_proplist(PropList :: [{jsondoc_name(), any()}, ...]) -> jsondoc().
+-spec from_proplist(PropList :: proplist()) -> jsondoc().
 from_proplist(PropList) ->
 	{from_proplist(PropList, [])}.
 
--spec to_proplist(Doc :: jsondoc()) -> [{jsondoc_name(), any()}, ...].
+-spec to_proplist(Doc :: jsondoc()) -> proplist().
 to_proplist({PropList}) ->
 	to_proplist(PropList, []).
 
