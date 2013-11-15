@@ -80,10 +80,10 @@ set_value({PropList}, Name, Value) ->
 	{lists:keystore(Name, 1, PropList, {Name, Value})}.
 
 -spec set_values(Doc :: jsondoc(), Values :: proplist()) -> jsondoc().
-set_values(Doc, []) -> Doc;
 set_values(Doc, [{Field, Value}|T]) ->
 	Doc1 = set_value(Doc, Field, Value),
-	set_values(Doc1, T).
+	set_values(Doc1, T);
+set_values(Doc, []) -> Doc.
 
 -spec get_names(Doc :: jsondoc()) -> [jsondoc_name(), ...].
 get_names({PropList}) ->
@@ -161,7 +161,6 @@ from_utf8(Doc) ->
 is_name_value({Name, _}) when is_binary(Name) orelse is_atom(Name) -> true;
 is_name_value(_) -> false.
 
-to_proplist([], OutList) -> OutList;
 to_proplist([Tuple|T], OutList) ->
 	{Key, Value} = Tuple,
 	NewOutList = case is_jsondoc(Value) of
@@ -176,9 +175,9 @@ to_proplist([Tuple|T], OutList) ->
 				_ -> lists:keystore(Key, 1, OutList, Tuple)
 			end
 	end,
-	to_proplist(T, NewOutList).
+	to_proplist(T, NewOutList);
+to_proplist([], OutList) -> OutList.
 
-array_to_proplist([], OutList) -> lists:reverse(OutList);
 array_to_proplist([H|T], OutList) ->
 	Value = case is_jsondoc(H) of
 		true ->	to_proplist(H);
@@ -188,9 +187,9 @@ array_to_proplist([H|T], OutList) ->
 				_ -> H
 			end
 	end,
-	array_to_proplist(T, [Value|OutList]).
+	array_to_proplist(T, [Value|OutList]);
+array_to_proplist([], OutList) -> lists:reverse(OutList).
 
-from_proplist([], OutList) -> OutList;
 from_proplist([Tuple|T], OutList) ->
 	{Key, Value} = Tuple,
 	NewOutList = case is_proplist(Value) of
@@ -205,9 +204,9 @@ from_proplist([Tuple|T], OutList) ->
 				_ -> lists:keystore(Key, 1, OutList, Tuple)
 			end
 	end,
-	from_proplist(T, NewOutList).
+	from_proplist(T, NewOutList);
+from_proplist([], OutList) -> OutList.
 
-array_from_proplist([], OutList) -> lists:reverse(OutList);
 array_from_proplist([H|T], OutList) ->
 	Value = case is_proplist(H) of
 		true ->	from_proplist(H);
@@ -217,30 +216,31 @@ array_from_proplist([H|T], OutList) ->
 				_ -> H
 			end
 	end,
-	array_from_proplist(T, [Value|OutList]).
+	array_from_proplist(T, [Value|OutList]);
+array_from_proplist([], OutList) -> lists:reverse(OutList).
 
-to_utf8([], OutDoc) -> OutDoc;
 to_utf8([Tuple|T], OutDoc) ->
 	{Key, Value} = Tuple,
 	NewValue = to_utf8(Value),
 	NewOutDoc = set_value(OutDoc, Key, NewValue),
-	to_utf8(T, NewOutDoc).
+	to_utf8(T, NewOutDoc);
+to_utf8([], OutDoc) -> OutDoc.
 
-array_to_utf8([], OutList) -> lists:reverse(OutList);
 array_to_utf8([H|T], OutList) when is_binary(H) ->
 	Utf8 = string_to_utf8(H),
 	array_to_utf8(T, [Utf8|OutList]);
-array_to_utf8([H|T], OutList) -> array_to_utf8(T, [H|OutList]).
+array_to_utf8([H|T], OutList) -> array_to_utf8(T, [H|OutList]);
+array_to_utf8([], OutList) -> lists:reverse(OutList).
 
-from_utf8([], OutDoc) -> OutDoc;
 from_utf8([Tuple|T], OutDoc) ->
 	{Key, Value} = Tuple,
 	NewValue = from_utf8(Value),
 	NewOutDoc = set_value(OutDoc, Key, NewValue),
-	from_utf8(T, NewOutDoc).
+	from_utf8(T, NewOutDoc);
+from_utf8([], OutDoc) -> OutDoc.
 
-array_from_utf8([], OutList) -> lists:reverse(OutList);
 array_from_utf8([H|T], OutList) when is_binary(H) ->
 	Utf8 = string_from_utf8(H),
 	array_from_utf8(T, [Utf8|OutList]);
-array_from_utf8([H|T], OutList) -> array_from_utf8(T, [H|OutList]).
+array_from_utf8([H|T], OutList) -> array_from_utf8(T, [H|OutList]);
+array_from_utf8([], OutList) -> lists:reverse(OutList).
