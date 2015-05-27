@@ -1,5 +1,5 @@
 %%
-%% Copyright 2013 Joaquim Rocha
+%% Copyright 2013-15 Joaquim Rocha <jrocha@gmailbox.org>
 %% 
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -16,9 +16,8 @@
 
 {application, jsondoc, [
 	{description, "JSON Doc tools"},
-	{vsn, "0.6.1"},
+	{vsn, "0.7.0"},
 	{modules, [	
-		jsondoc
 	]},
 	{registered, [ 
 	]},
