@@ -62,11 +62,8 @@ decode(Doc) ->
 	?JSON_DECODE(Doc).
 
 -spec get_value(Name :: jsondoc_name(), Doc :: jsondoc()) -> undefined | any().
-get_value(Name, {PropList}) ->
-	case lists:keyfind(Name, 1, PropList) of
-		false -> undefined;
-		{_, Value} -> Value
-	end.
+get_value(Name, Doc) ->
+	get_value(Name, Doc, undefined).
 
 -spec get_value(Name :: jsondoc_name(), Doc :: jsondoc(), Default :: any()) -> any().
 get_value(Name, {PropList}, Default) ->
