@@ -21,12 +21,12 @@
 -type jsondoc() :: {proplist()}.
 
 -export_type([jsondoc/0,
-			  jsondoc_name/0,
-			  proplist/0]).
+		jsondoc_name/0,
+		proplist/0]).
 
 -ifndef('WITH_JIFFY').
--define(JSON_ENCODE(D), jsondoc_encode:encode(D)).
--define(JSON_DECODE(D), jsondoc_decode:decode(D)).
+-define(JSON_ENCODE(D), jsondoc_json:encode(D)).
+-define(JSON_DECODE(D), jsondoc_json:decode(D)).
 -else.
 -define(JSON_ENCODE(D), jiffy:encode(D, [uescape])).
 -define(JSON_DECODE(D), jiffy:decode(D)).
