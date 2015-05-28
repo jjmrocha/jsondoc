@@ -96,11 +96,11 @@ delete_name({PropList}, Name) ->
 
 -spec from_proplist(PropList :: proplist()) -> jsondoc().
 from_proplist(PropList) ->
-	{from_proplist(PropList, [])}.
+	jsondoc_proplist:from_proplist(PropList).
 
 -spec to_proplist(Doc :: jsondoc()) -> proplist().
-to_proplist({PropList}) ->
-	to_proplist(PropList, []).
+to_proplist(Doc) ->
+	jsondoc_proplist:to_proplist(Doc).
 
 -spec is_jsondoc(Doc :: any()) -> boolean().
 is_jsondoc({InnerDoc}) when is_list(InnerDoc) ->
@@ -114,61 +114,3 @@ is_proplist(_) -> false.
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
-
-to_proplist([Tuple|T], OutList) ->
-	{Key, Value} = Tuple,
-	NewOutList = case is_jsondoc(Value) of
-		true -> 
-			NewPropList = to_proplist(Value),
-			lists:keystore(Key, 1, OutList, {Key, NewPropList});	
-		_ ->
-			case is_list(Value) of
-				true -> 
-					NewArray = array_to_proplist(Value, []),
-					lists:keystore(Key, 1, OutList, {Key, NewArray});
-				_ -> lists:keystore(Key, 1, OutList, Tuple)
-			end
-	end,
-	to_proplist(T, NewOutList);
-to_proplist([], OutList) -> OutList.
-
-array_to_proplist([H|T], OutList) ->
-	Value = case is_jsondoc(H) of
-		true ->	to_proplist(H);
-		_ -> 
-			case is_list(H) of
-				true -> array_to_proplist(H, []);
-				_ -> H
-			end
-	end,
-	array_to_proplist(T, [Value|OutList]);
-array_to_proplist([], OutList) -> lists:reverse(OutList).
-
-from_proplist([Tuple|T], OutList) ->
-	{Key, Value} = Tuple,
-	NewOutList = case is_proplist(Value) of
-		true -> 
-			NewDoc = from_proplist(Value),
-			lists:keystore(Key, 1, OutList, {Key, NewDoc});		
-		_ ->
-			case is_list(Value) of
-				true ->
-					NewArray = array_from_proplist(Value, []),
-					lists:keystore(Key, 1, OutList, {Key, NewArray});	
-				_ -> lists:keystore(Key, 1, OutList, Tuple)
-			end
-	end,
-	from_proplist(T, NewOutList);
-from_proplist([], OutList) -> OutList.
-
-array_from_proplist([H|T], OutList) ->
-	Value = case is_proplist(H) of
-		true ->	from_proplist(H);
-		_ -> 
-			case is_list(H) of
-				true -> array_from_proplist(H, []);
-				_ -> H
-			end
-	end,
-	array_from_proplist(T, [Value|OutList]);
-array_from_proplist([], OutList) -> lists:reverse(OutList).
