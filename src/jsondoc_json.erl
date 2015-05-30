@@ -19,6 +19,12 @@
 -define(IS_SPACE(C), (C =:= $\s orelse C =:= $\t orelse C =:= $\r orelse C =:= $\n)).
 -define(IS_NUMBER_TERMINATOR(C), (C =:= $} orelse C =:= $, orelse C =:= $])).
 
+-ifndef(JSONDOC_NO_MAPS).
+-define(IS_MAP(M), is_map(M)).
+-else.
+-define(IS_MAP(M), (1 == 0)).
+-endif.
+
 %% ====================================================================
 %% API functions
 %% ====================================================================
@@ -195,6 +201,8 @@ encode_term(Term = [{Name, _}|_], Acc) when is_binary(Name) orelse is_atom(Name)
 	encode_object(Term, true, [${|Acc]);
 encode_term(Term, Acc) when is_list(Term) -> 
 	encode_array(Term, true, [$[|Acc]);
+encode_term(Term, Acc) when ?IS_MAP(Term) -> 
+	encode_object(maps:to_list(Term), true, [${|Acc]);
 encode_term(Term, Acc) when is_binary(Term) ->
 	encode_string(Term, Acc);
 encode_term(true, Acc) ->

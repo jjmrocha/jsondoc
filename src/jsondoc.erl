@@ -50,6 +50,8 @@
 	delete_name/2,
 	from_proplist/1,
 	to_proplist/1,
+	from_map/1,
+	to_map/1,		 
 	is_jsondoc/1,
 	is_proplist/1]).
 
@@ -104,6 +106,22 @@ from_proplist(PropList) ->
 -spec to_proplist(Doc :: jsondoc()) -> proplist().
 to_proplist(Doc) ->
 	jsondoc_proplist:to_proplist(Doc).
+
+-ifndef(JSONDOC_NO_MAPS).
+-spec from_map(Map :: map()) -> jsondoc().
+from_map(Map) ->
+	jsondoc_map:from_map(Map).
+
+-spec to_map(Doc :: jsondoc()) -> map().
+to_map(Doc) ->
+	jsondoc_map:to_map(Doc).
+-else.
+from_map(Map) ->
+	erlang:error(not_supported_by_vm).
+
+to_map(Doc) ->
+	erlang:error(not_supported_by_vm).
+-endif.
 
 -spec is_jsondoc(Doc :: any()) -> boolean().
 is_jsondoc({InnerDoc}) when is_list(InnerDoc) ->
