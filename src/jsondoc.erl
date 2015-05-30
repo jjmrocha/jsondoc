@@ -28,7 +28,10 @@
 -define(JSON_ENCODE(D), jsondoc_json:encode(D)).
 -define(JSON_DECODE(D), jsondoc_json:decode(D)).
 -else.
--define(JSON_ENCODE(D), jiffy:encode(D, [uescape])).
+-define(JSON_ENCODE(D), case is_proplist(D) of
+		true -> jiffy:encode(from_proplist(D), [uescape]);
+		false -> jiffy:encode(D, [uescape])
+	end).
 -define(JSON_DECODE(D), jiffy:decode(D)).
 -endif.
 

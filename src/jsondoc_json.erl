@@ -191,6 +191,8 @@ try_float(Value) ->
 
 encode_term({Term}, Acc) when is_list(Term) -> 
 	encode_object(Term, true, [${|Acc]);
+encode_term(Term = [{Name, _}|_], Acc) when is_binary(Name) orelse is_atom(Name) -> 
+	encode_object(Term, true, [${|Acc]);
 encode_term(Term, Acc) when is_list(Term) -> 
 	encode_array(Term, true, [$[|Acc]);
 encode_term(Term, Acc) when is_binary(Term) ->
@@ -208,7 +210,7 @@ encode_term(Term, Acc) when is_integer(Term) ->
 encode_term(Term, Acc) when is_float(Term) ->
 	[encode_float(Term)|Acc];
 encode_term(_, _) ->
-	erlang:error(not_valid_json).
+	erlang:error(not_valid_ejson).
 
 encode_object([{Key, Value}|T], First, Acc) ->
 	Acc1 = field_separator(First, Acc),
