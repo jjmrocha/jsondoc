@@ -22,7 +22,7 @@
 -ifndef(JSONDOC_NO_MAPS).
 -define(IS_MAP(M), is_map(M)).
 -else.
--define(IS_MAP(M), (1 == 0)).
+-define(IS_MAP(M), false).
 -endif.
 
 %% ====================================================================
