@@ -26,6 +26,7 @@
 
 %%
 %% select(Doc, Field) - Return field value
+%% select(Array, Field) - Return list with field values
 %% select(Array, Index) - Return element
 %% select(Array, Query) - Return list on elements matching Query
 %% select(JSON, Path) - Return the result of the execution of PATH
@@ -54,6 +55,13 @@ select(Array, Index) when is_list(Array) andalso is_integer(Index) ->
 select(Array, {Field, Value}) when is_list(Array) ->
 	lists:filter(fun(N) -> 
 			select(N, Field) == Value
+		end, Array);
+select(Array, Field) when is_list(Array) ->
+	lists:filtermap(fun(N) -> 
+			case select(N, Field) of
+				?NO_VALUE -> false;
+				Value -> {true, Value}
+			end
 		end, Array);
 select({PropList}, Field) ->
 	case lists:keyfind(Field, 1, PropList) of
