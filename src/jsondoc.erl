@@ -28,11 +28,14 @@
 -define(JSON_ENCODE(D), jsondoc_json:encode(D)).
 -define(JSON_DECODE(D), jsondoc_json:decode(D)).
 -else.
--define(JSON_ENCODE(D), case is_proplist(D) of
-		true -> jiffy:encode(from_proplist(D), [uescape]);
-		false -> jiffy:encode(D, [uescape])
-	end).
+-define(JSON_ENCODE(D), jiffy:encode(ensure(D), [uescape])).
 -define(JSON_DECODE(D), jiffy:decode(D)).
+-endif.
+
+-ifndef('JSONDOC_NO_MAPS').
+-define(IS_MAP(D), is_map(D)).
+-else.
+-define(IS_MAP(_), (1 =:= 0)).
 -endif.
 
 %% ====================================================================
@@ -53,7 +56,8 @@
 	from_map/1,
 	to_map/1,		 
 	is_jsondoc/1,
-	is_proplist/1]).
+	is_proplist/1,
+	ensure/1]).
 
 -spec new() -> jsondoc().
 new() -> {[]}.
@@ -107,7 +111,7 @@ from_proplist(PropList) ->
 to_proplist(Doc) ->
 	jsondoc_proplist:to_proplist(Doc).
 
--ifndef(JSONDOC_NO_MAPS).
+-ifndef('JSONDOC_NO_MAPS').
 -spec from_map(Map :: map()) -> jsondoc().
 from_map(Map) ->
 	jsondoc_map:from_map(Map).
@@ -131,6 +135,20 @@ is_jsondoc(_) -> false.
 -spec is_proplist(Doc :: any()) -> boolean().
 is_proplist([{Name, _}|_]) when is_binary(Name) orelse is_atom(Name) -> true;
 is_proplist(_) -> false.
+
+-spec ensure(Term :: term()) -> term().
+ensure(Term = {[_]}) -> Term;
+ensure(Term) when is_list(Term) -> 
+	case is_proplist(Term) of
+		true -> from_proplist(Term);
+		false ->
+			lists:map(fun(X) -> 
+						ensure(X) 
+				end, Term)
+	end;
+ensure(Term) when ?IS_MAP(Term) ->
+	from_map(Term);
+ensure(Term) -> Term.
 
 %% ====================================================================
 %% Internal functions
