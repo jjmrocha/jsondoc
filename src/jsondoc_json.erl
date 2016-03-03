@@ -252,12 +252,12 @@ encode_string(Term, Acc) when is_atom(Term) ->
 encode_string(_, _) -> 
 	erlang:error(invalid_string).
 
-safe_string(<<X, T/binary>>, Acc) when X >= 32 andalso X =< 127 ->
-	safe_string(T, [X|Acc]);
-safe_string(<<$", T/binary>>, Acc) -> 
+safe_string(<<"\"", T/binary>>, Acc) -> 
 	safe_string(T, [<<"\\\"">>|Acc]);
-safe_string(<<$\\, T/binary>>, Acc) -> 
+safe_string(<<"\\", T/binary>>, Acc) -> 
 	safe_string(T, [<<"\\\\">>|Acc]);
+safe_string(<<X, T/binary>>, Acc) when X >= 32 andalso X =< 127 ->
+	safe_string(T, [X|Acc]);	
 safe_string(<<X/utf8, T/binary>>, Acc) -> 
 	C = escape_char(X),
 	safe_string(T, [C|Acc]);
