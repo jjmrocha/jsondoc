@@ -44,8 +44,6 @@
 -export([new/0,
 	encode/1,
 	decode/1,
-	decode_to_map/1,
-	decode_to_proplist/1,
 	get_value/2,
 	get_value/3,
 	set_value/3,
@@ -73,14 +71,6 @@ encode(Doc) ->
 -spec decode(Doc :: binary()) -> term().
 decode(Doc) ->
 	?JSON_DECODE(Doc).
-	
--spec decode_to_map(Doc :: binary()) -> term().
-decode_to_map(Doc) ->
-	to_map(decode(Doc)).
-	
--spec decode_to_proplist(Doc :: binary()) -> term().
-decode_to_proplist(Doc) ->
-	to_proplist(decode(Doc)).
 
 -spec get_value(Name :: jsondoc_name(), Doc :: jsondoc()) -> undefined | any().
 get_value(Name, Doc) ->
