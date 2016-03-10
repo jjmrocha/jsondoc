@@ -59,24 +59,26 @@
 	to_map/1,		 
 	is_jsondoc/1,
 	is_proplist/1,
+	query/1,
+	query/2,
 	ensure/1]).
 
 -spec new() -> jsondoc().
 new() -> {[]}.
 
--spec encode(Doc :: jsondoc()) -> binary().
+-spec encode(Doc :: term()) -> binary().
 encode(Doc) ->
 	?JSON_ENCODE(Doc).
 
--spec decode(Doc :: binary()) -> jsondoc().
+-spec decode(Doc :: binary()) -> term().
 decode(Doc) ->
 	?JSON_DECODE(Doc).
 	
--spec decode_to_map(Doc :: binary()) -> map().
+-spec decode_to_map(Doc :: binary()) -> term().
 decode_to_map(Doc) ->
 	to_map(decode(Doc)).
 	
--spec decode_to_proplist(Doc :: binary()) -> proplist().
+-spec decode_to_proplist(Doc :: binary()) -> term().
 decode_to_proplist(Doc) ->
 	to_proplist(decode(Doc)).
 
@@ -145,6 +147,20 @@ is_jsondoc(_) -> false.
 -spec is_proplist(Doc :: any()) -> boolean().
 is_proplist([{Name, _}|_]) when is_binary(Name) orelse is_atom(Name) -> true;
 is_proplist(_) -> false.
+
+-spec query(Query::binary()) -> {ok, list()} | {error, Reason::term()}.
+query(Query) when is_binary(Query) ->
+	DecQuery = decode(Query),
+	case jsondoc_query:valid(DecQuery) of
+		true -> {ok, DecQuery};
+		false -> {error, invalid_query_format}
+	end.
+	
+-spec query(list() | jsondoc(), Query:: term()) -> term().
+query(Doc = {PropList}, Query) when is_list(PropList) ->
+	jsondoc_query:select(Doc, Query);
+query(Array, Query) when is_list(Array) ->
+	jsondoc_query:select(Array, Query).
 
 -spec ensure(Term :: term()) -> term().
 ensure(Term = {[_]}) -> Term;
