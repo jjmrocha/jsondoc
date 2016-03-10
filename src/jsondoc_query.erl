@@ -22,7 +22,7 @@
 %% API functions
 %% ====================================================================
 
--export([select/2]).
+-export([select/2, valid/1]).
 
 %%
 %% select(Doc, Field) - Return field value
@@ -70,8 +70,23 @@ select({PropList}, Field) ->
 	end;
 select(_, _) -> ?NO_VALUE.
 
+valid(Path) when is_list(Path) andalso length(Path) > 0 -> valid_path(Path);
+valid(_) -> false.
+
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
 
+valid_path([H|T]) -> 
+	case valid_path_key(H) of
+		true -> valid_path(T);
+		false -> false
+	end;
+valid_path([]) -> true.
 
+valid_path_key(Field) when is_atom(Field) -> true;
+valid_path_key(Field) when is_binary(Field) -> true;
+valid_path_key(Index) when is_integer(Index) andalso Index >= 1-> true;
+valid_path_key({Field, _}) when is_atom(Field) -> true;
+valid_path_key({Field, _}) when is_binary(Field) -> true;
+valid_path_key(_) -> false.
