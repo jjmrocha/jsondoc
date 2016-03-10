@@ -24,14 +24,6 @@
 		jsondoc_name/0,
 		proplist/0]).
 
--ifndef('WITH_JIFFY').
--define(JSON_ENCODE(D), jsondoc_json:encode(D)).
--define(JSON_DECODE(D), jsondoc_json:decode(D)).
--else.
--define(JSON_ENCODE(D), jiffy:encode(ensure(D), [uescape])).
--define(JSON_DECODE(D), jiffy:decode(D)).
--endif.
-
 -ifndef('JSONDOC_NO_MAPS').
 -define(IS_MAP(D), is_map(D)).
 -else.
@@ -66,11 +58,11 @@ new() -> {[]}.
 
 -spec encode(Doc :: term()) -> binary().
 encode(Doc) ->
-	?JSON_ENCODE(Doc).
+	jsondoc_json:encode(Doc).
 
 -spec decode(Doc :: binary()) -> term().
 decode(Doc) ->
-	?JSON_DECODE(Doc).
+	jsondoc_json:decode(Doc).
 
 -spec get_value(Name :: jsondoc_name(), Doc :: jsondoc()) -> undefined | any().
 get_value(Name, Doc) ->
