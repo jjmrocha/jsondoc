@@ -125,6 +125,10 @@ delete_name(Map, Name) when ?IS_JSONDOC_NAME(Name) andalso ?IS_MAP(Map) ->
 from_proplist(PropList) -> ensure(PropList).
 
 -spec to_proplist(Doc :: ejson() | [ejson()]) -> proplist() | [proplist()].
+to_proplist(Array) when is_list(Array) ->
+	lists:map(fun(X) -> 
+			jsondoc_proplist:to_proplist(X)
+		end, Array);
 to_proplist(Doc) -> jsondoc_proplist:to_proplist(Doc).
 
 -ifndef('JSONDOC_NO_MAPS').
@@ -132,6 +136,10 @@ to_proplist(Doc) -> jsondoc_proplist:to_proplist(Doc).
 from_map(Map) -> ensure(Map).
 
 -spec to_map(Doc :: ejson() | [ejson()]) -> map() | [map()].
+to_map(Array) when is_list(Array) ->
+	lists:map(fun(X) -> 
+			jsondoc_map:to_map(X)
+		end, Array);
 to_map(Doc) -> jsondoc_map:to_map(Doc).
 -else.
 from_map(_Map) -> erlang:error(not_supported_by_vm).
