@@ -34,6 +34,8 @@
 -define(IS_MAP(_), false).
 -endif.
 
+-define(IS_JSONDOC_NAME(Name), (is_binary(Name) orelse is_atom(Name))).
+
 %% ====================================================================
 %% API functions
 %% ====================================================================
@@ -62,38 +64,35 @@
 new() -> {[]}.
 
 -spec encode(Erlang :: jsondoc() | [jsondoc()] | json_term()) -> binary().
-encode(Erlang) ->
-	jsondoc_json:encode(Erlang).
+encode(Erlang) -> jsondoc_json:encode(Erlang).
 
 -spec decode(JSON :: binary()) -> term().
-decode(JSON) ->
-	jsondoc_json:decode(JSON).
+decode(JSON) -> jsondoc_json:decode(JSON).
 
 -spec get_value(Name :: jsondoc_name(), Doc :: jsondoc()) -> undefined | term().
-get_value(Name, Doc) ->
-	get_value(Name, Doc, undefined).
+get_value(Name, Doc) -> get_value(Name, Doc, undefined).
 
 -spec get_value(Name :: jsondoc_name(), Doc :: jsondoc(), Default :: term()) -> term().
-get_value(Name, {PropList}, Default) ->
+get_value(Name, {PropList}, Default) when ?IS_JSONDOC_NAME(Name) ->
 	get_value(Name, PropList, Default);
-get_value(Name, PropList, Default) when is_list(PropList) ->
+get_value(Name, PropList, Default) when ?IS_JSONDOC_NAME(Name) andalso is_list(PropList) ->
 	case lists:keyfind(Name, 1, PropList) of
 		false -> Default;
 		{_, Value} -> Value
 	end;
-get_value(Name, Map, Default) when ?IS_MAP(Map) ->
+get_value(Name, Map, Default) when ?IS_JSONDOC_NAME(Name) andalso ?IS_MAP(Map) ->
 	maps:get(Name, Map, Default).
 
 -spec set_value(Doc :: jsondoc(), Name :: jsondoc_name(), Value :: term()) -> jsondoc().
-set_value({PropList}, Name, Value) ->
+set_value({PropList}, Name, Value) when ?IS_JSONDOC_NAME(Name) ->
 	{set_value(PropList, Name, Value)};
-set_value(PropList, Name, Value) when is_list(PropList) ->
+set_value(PropList, Name, Value) when ?IS_JSONDOC_NAME(Name) andalso is_list(PropList) ->
 	lists:keystore(Name, 1, PropList, {Name, Value});
-set_value(Map, Name, Value) when ?IS_MAP(Map) ->
+set_value(Map, Name, Value) when ?IS_JSONDOC_NAME(Name) andalso ?IS_MAP(Map) ->
 	map:update(Name, Value, Map).
 
 -spec set_values(Doc :: jsondoc(), Values :: proplist()) -> jsondoc().
-set_values(Doc, [{Field, Value}|T]) ->
+set_values(Doc, [{Field, Value}|T]) when ?IS_JSONDOC_NAME(Field) ->
 	Doc1 = set_value(Doc, Field, Value),
 	set_values(Doc1, T);
 set_values(Doc, []) -> Doc.
@@ -107,43 +106,37 @@ get_names(Map) when ?IS_MAP(Map) ->
 	map:keys(Map).
 
 -spec has_name(Name :: jsondoc_name(), Doc :: jsondoc()) -> boolean().
-has_name(Name, {PropList}) ->
+has_name(Name, {PropList}) when ?IS_JSONDOC_NAME(Name) ->
 	has_name(Name, PropList);
-has_name(Name, PropList) when is_list(PropList) ->
+has_name(Name, PropList) when ?IS_JSONDOC_NAME(Name) andalso is_list(PropList) ->
 	lists:keymember(Name, 1, PropList);
-has_name(Name, Map) when ?IS_MAP(Map) ->
+has_name(Name, Map) when ?IS_JSONDOC_NAME(Name) andalso ?IS_MAP(Map) ->
 	map:is_key(Key, Map).
 
 -spec delete_name(Doc :: jsondoc(), Name :: jsondoc_name()) -> jsondoc().
-delete_name({PropList}, Name) ->
+delete_name({PropList}, Name) when ?IS_JSONDOC_NAME(Name) ->
 	{delete_name(PropList, Name)};
-delete_name(PropList, Name) when is_list(PropList) ->
+delete_name(PropList, Name) when ?IS_JSONDOC_NAME(Name) andalso is_list(PropList) ->
 	lists:keydelete(Name, 1, PropList);
-delete_name(Map, Name) when ?IS_MAP(Map) ->
+delete_name(Map, Name) when ?IS_JSONDOC_NAME(Name) andalso ?IS_MAP(Map) ->
 	map:remove(Key, Map).
 
 -spec from_proplist(PropList :: proplist() | [proplist()]) -> jsondoc() | [ejson()].
-from_proplist(PropList) ->
-	ensure(PropList).
+from_proplist(PropList) -> ensure(PropList).
 
 -spec to_proplist(Doc :: ejson() | [ejson()]) -> proplist() | [proplist()].
-to_proplist(Doc) ->
-	jsondoc_proplist:to_proplist(Doc).
+to_proplist(Doc) -> jsondoc_proplist:to_proplist(Doc).
 
 -ifndef('JSONDOC_NO_MAPS').
 -spec from_map(Map :: map() | [map()]) -> ejson() | [ejson()].
-from_map(Map) ->
-	ensure(Map).
+from_map(Map) -> ensure(Map).
 
 -spec to_map(Doc :: ejson() | [ejson()]) -> map() | [map()].
-to_map(Doc) ->
-	jsondoc_map:to_map(Doc).
+to_map(Doc) -> jsondoc_map:to_map(Doc).
 -else.
-from_map(_Map) ->
-	erlang:error(not_supported_by_vm).
+from_map(_Map) -> erlang:error(not_supported_by_vm).
 
-to_map(_Doc) ->
-	erlang:error(not_supported_by_vm).
+to_map(_Doc) -> erlang:error(not_supported_by_vm).
 -endif.
 
 -spec is_ejson(Doc :: any()) -> boolean().
@@ -153,11 +146,11 @@ is_ejson(_) -> false.
 
 -spec is_jsondoc(Doc :: any()) -> boolean().
 is_jsondoc(Map) when ?IS_MAP(Map) -> true;
-is_jsondoc([{Name, _}|_]) when is_binary(Name) orelse is_atom(Name) -> true;
+is_jsondoc([{Name, _}|_]) when ?IS_JSONDOC_NAME(Name) -> true;
 is_jsondoc(Doc) -> is_ejson(Doc).
 
 -spec is_proplist(Doc :: any()) -> boolean().
-is_proplist([{Name, _}|_]) when is_binary(Name) orelse is_atom(Name) -> true;
+is_proplist([{Name, _}|_]) when ?IS_JSONDOC_NAME(Name) -> true;
 is_proplist(_) -> false.
 
 -spec compile_query(Query::binary()) -> {ok, list()} | {error, Reason::term()}.
