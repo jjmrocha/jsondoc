@@ -1,5 +1,5 @@
 %%
-%% Copyright 2013-15 Joaquim Rocha <jrocha@gmailbox.org>
+%% Copyright 2013-16 Joaquim Rocha <jrocha@gmailbox.org>
 %% 
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -17,6 +17,9 @@
 -module(jsondoc_query).
 
 -define(NO_VALUE, undefined).
+
+-define(IS_FIELD(Field), (is_binary(Field) orelse is_atom(Field))).
+-define(IS_INDEX(Index), (is_integer(Index) andalso Index >= 1)).
 
 %% ====================================================================
 %% API functions
@@ -47,26 +50,24 @@ select(Value, []) -> Value;
 select(JSON, [PathKey|T]) ->
 	JSON1 = select(JSON, PathKey), 
 	select(JSON1, T);
-select(Array, Index) when is_list(Array) andalso is_integer(Index) ->
+select(Array, Index) when is_list(Array) andalso ?IS_INDEX(Index) ->
 	try lists:nth(Index, Array)
-	catch
-		_:_ -> ?NO_VALUE
+	catch _:_ -> ?NO_VALUE
 	end;
-select(Array, {Field, Value}) when is_list(Array) ->
+select(Array, {Field, Value}) when is_list(Array) andalso ?IS_FIELD(Field) ->
 	lists:filter(fun(N) -> 
 			select(N, Field) == Value
 		end, Array);
-select(Array, Field) when is_list(Array) ->
+select(Array, Field) when is_list(Array) andalso ?IS_FIELD(Field) ->
 	lists:filtermap(fun(N) -> 
 			case select(N, Field) of
 				?NO_VALUE -> false;
 				Value -> {true, Value}
 			end
 		end, Array);
-select({PropList}, Field) ->
-	case lists:keyfind(Field, 1, PropList) of
-		false -> ?NO_VALUE;
-		{_, Value} -> Value
+select(Doc, Field) when ?IS_FIELD(Field) ->
+	try jsondoc:get_value(Field, Doc, ?NO_VALUE)
+	catch _:_ -> ?NO_VALUE
 	end;
 select(_, _) -> ?NO_VALUE.
 
@@ -84,9 +85,7 @@ valid_path([H|T]) ->
 	end;
 valid_path([]) -> true.
 
-valid_path_key(Field) when is_atom(Field) -> true;
-valid_path_key(Field) when is_binary(Field) -> true;
-valid_path_key(Index) when is_integer(Index) andalso Index >= 1-> true;
-valid_path_key({Field, _}) when is_atom(Field) -> true;
-valid_path_key({Field, _}) when is_binary(Field) -> true;
+valid_path_key(Field) when ?IS_FIELD(Field) -> true;
+valid_path_key(Index) when ?IS_INDEX(Index) -> true;
+valid_path_key({Field, _}) when ?IS_FIELD(Field) -> true;
 valid_path_key(_) -> false.
