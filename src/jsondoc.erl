@@ -179,11 +179,11 @@ ensure(Term) when is_list(Term) ->
 ensure(Term) when ?IS_MAP(Term) ->
 	jsondoc_map:from_map(Term);
 ensure(Term) when is_binary(Term) -> Term;
-ensure(Term) when is_atom(Term) -> Term;
-ensure(Term) when is_boolean(Term) -> Term;
 ensure(Term) when is_integer(Term) -> Term;
 ensure(Term) when is_float(Term) -> Term;
+ensure(Term) when is_boolean(Term) -> Term;
 ensure(null) -> null;
+ensure(Term) when is_atom(Term) -> Term;
 ensure(_) -> erlang:error(not_valid_ejson).
 
 %% ====================================================================
