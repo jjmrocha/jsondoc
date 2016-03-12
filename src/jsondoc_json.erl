@@ -1,5 +1,5 @@
 %%
-%% Copyright 2015 Joaquim Rocha <jrocha@gmailbox.org>
+%% Copyright 2015-16 Joaquim Rocha <jrocha@gmailbox.org>
 %% 
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -16,14 +16,10 @@
 
 -module(jsondoc_json).
 
+-include("jsondoc.hrl").
+
 -define(IS_SPACE(C), (C =:= $\s orelse C =:= $\t orelse C =:= $\r orelse C =:= $\n)).
 -define(IS_NUMBER_TERMINATOR(C), (C =:= $} orelse C =:= $, orelse C =:= $])).
-
--ifndef(JSONDOC_NO_MAPS).
--define(IS_MAP(M), is_map(M)).
--else.
--define(IS_MAP(M), false).
--endif.
 
 %% ====================================================================
 %% API functions

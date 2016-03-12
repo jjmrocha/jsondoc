@@ -1,5 +1,5 @@
 %%
-%% Copyright 2013-15 Joaquim Rocha <jrocha@gmailbox.org>
+%% Copyright 2013-16 Joaquim Rocha <jrocha@gmailbox.org>
 %% 
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 -module(jsondoc).
 
+-include("jsondoc.hrl").
+
 -type json_term() :: atom() | binary() | boolean() | integer() | float().
 -type jsondoc_name() :: atom() | binary().
 -type proplist() :: [{jsondoc_name(), any()}, ...].
@@ -25,16 +27,8 @@
 -export_type([json_term/0, 
 		jsondoc/0,
 		jsondoc_name/0,
-		proplist/0
+		proplist/0,
 		ejson/0]).
-
--ifndef('JSONDOC_NO_MAPS').
--define(IS_MAP(D), is_map(D)).
--else.
--define(IS_MAP(_), false).
--endif.
-
--define(IS_JSONDOC_NAME(Name), (is_binary(Name) orelse is_atom(Name))).
 
 %% ====================================================================
 %% API functions
@@ -70,29 +64,29 @@ encode(Erlang) -> jsondoc_json:encode(Erlang).
 decode(JSON) -> jsondoc_json:decode(JSON).
 
 -spec get_value(Name :: jsondoc_name(), Doc :: jsondoc()) -> undefined | term().
-get_value(Name, Doc) -> get_value(Name, Doc, undefined).
+get_value(Name, Doc) when ?IS_FIELD(Name) -> get_value(Name, Doc, ?NO_VALUE).
 
 -spec get_value(Name :: jsondoc_name(), Doc :: jsondoc(), Default :: term()) -> term().
-get_value(Name, {PropList}, Default) when ?IS_JSONDOC_NAME(Name) ->
+get_value(Name, {PropList}, Default) when ?IS_FIELD(Name) ->
 	get_value(Name, PropList, Default);
-get_value(Name, PropList, Default) when ?IS_JSONDOC_NAME(Name) andalso is_list(PropList) ->
+get_value(Name, PropList, Default) when ?IS_FIELD(Name) andalso is_list(PropList) ->
 	case lists:keyfind(Name, 1, PropList) of
 		false -> Default;
 		{_, Value} -> Value
 	end;
-get_value(Name, Map, Default) when ?IS_JSONDOC_NAME(Name) andalso ?IS_MAP(Map) ->
+get_value(Name, Map, Default) when ?IS_FIELD(Name) andalso ?IS_MAP(Map) ->
 	maps:get(Name, Map, Default).
 
 -spec set_value(Doc :: jsondoc(), Name :: jsondoc_name(), Value :: term()) -> jsondoc().
-set_value({PropList}, Name, Value) when ?IS_JSONDOC_NAME(Name) ->
+set_value({PropList}, Name, Value) when ?IS_FIELD(Name) ->
 	{set_value(PropList, Name, Value)};
-set_value(PropList, Name, Value) when ?IS_JSONDOC_NAME(Name) andalso is_list(PropList) ->
+set_value(PropList, Name, Value) when ?IS_FIELD(Name) andalso is_list(PropList) ->
 	lists:keystore(Name, 1, PropList, {Name, Value});
-set_value(Map, Name, Value) when ?IS_JSONDOC_NAME(Name) andalso ?IS_MAP(Map) ->
+set_value(Map, Name, Value) when ?IS_FIELD(Name) andalso ?IS_MAP(Map) ->
 	map:update(Name, Value, Map).
 
 -spec set_values(Doc :: jsondoc(), Values :: proplist()) -> jsondoc().
-set_values(Doc, [{Field, Value}|T]) when ?IS_JSONDOC_NAME(Field) ->
+set_values(Doc, [{Field, Value}|T]) when ?IS_FIELD(Field) ->
 	Doc1 = set_value(Doc, Field, Value),
 	set_values(Doc1, T);
 set_values(Doc, []) -> Doc.
@@ -106,20 +100,20 @@ get_names(Map) when ?IS_MAP(Map) ->
 	map:keys(Map).
 
 -spec has_name(Name :: jsondoc_name(), Doc :: jsondoc()) -> boolean().
-has_name(Name, {PropList}) when ?IS_JSONDOC_NAME(Name) ->
+has_name(Name, {PropList}) when ?IS_FIELD(Name) ->
 	has_name(Name, PropList);
-has_name(Name, PropList) when ?IS_JSONDOC_NAME(Name) andalso is_list(PropList) ->
+has_name(Name, PropList) when ?IS_FIELD(Name) andalso is_list(PropList) ->
 	lists:keymember(Name, 1, PropList);
-has_name(Name, Map) when ?IS_JSONDOC_NAME(Name) andalso ?IS_MAP(Map) ->
-	map:is_key(Key, Map).
+has_name(Name, Map) when ?IS_FIELD(Name) andalso ?IS_MAP(Map) ->
+	map:is_key(Name, Map).
 
 -spec delete_name(Doc :: jsondoc(), Name :: jsondoc_name()) -> jsondoc().
-delete_name({PropList}, Name) when ?IS_JSONDOC_NAME(Name) ->
+delete_name({PropList}, Name) when ?IS_FIELD(Name) ->
 	{delete_name(PropList, Name)};
-delete_name(PropList, Name) when ?IS_JSONDOC_NAME(Name) andalso is_list(PropList) ->
+delete_name(PropList, Name) when ?IS_FIELD(Name) andalso is_list(PropList) ->
 	lists:keydelete(Name, 1, PropList);
-delete_name(Map, Name) when ?IS_JSONDOC_NAME(Name) andalso ?IS_MAP(Map) ->
-	map:remove(Key, Map).
+delete_name(Map, Name) when ?IS_FIELD(Name) andalso ?IS_MAP(Map) ->
+	map:remove(Name, Map).
 
 -spec from_proplist(PropList :: proplist() | [proplist()]) -> jsondoc() | [ejson()].
 from_proplist(PropList) -> ensure(PropList).
@@ -154,11 +148,11 @@ is_ejson(_) -> false.
 
 -spec is_jsondoc(Doc :: any()) -> boolean().
 is_jsondoc(Map) when ?IS_MAP(Map) -> true;
-is_jsondoc([{Name, _}|_]) when ?IS_JSONDOC_NAME(Name) -> true;
+is_jsondoc([{Name, _}|_]) when ?IS_FIELD(Name) -> true;
 is_jsondoc(Doc) -> is_ejson(Doc).
 
 -spec is_proplist(Doc :: any()) -> boolean().
-is_proplist([{Name, _}|_]) when ?IS_JSONDOC_NAME(Name) -> true;
+is_proplist([{Name, _}|_]) when ?IS_FIELD(Name) -> true;
 is_proplist(_) -> false.
 
 -spec compile_query(Query::binary()) -> {ok, list()} | {error, Reason::term()}.
@@ -170,7 +164,7 @@ compile_query(Query) when is_binary(Query) ->
 	end.
 	
 -spec query([jsondoc()] | jsondoc(), Query:: term()) -> term().
-query(Doc, Query) when is_list(PropList) ->
+query(Doc, Query) when is_list(Doc) ->
 	jsondoc_query:select(Doc, Query);
 query(Array, Query) when is_list(Array) andalso is_list(Query) ->
 	jsondoc_query:select(Array, Query).

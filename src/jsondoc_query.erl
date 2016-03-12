@@ -16,9 +16,8 @@
 
 -module(jsondoc_query).
 
--define(NO_VALUE, undefined).
+-include("jsondoc.hrl").
 
--define(IS_FIELD(Field), (is_binary(Field) orelse is_atom(Field))).
 -define(IS_INDEX(Index), (is_integer(Index) andalso Index >= 1)).
 
 %% ====================================================================
