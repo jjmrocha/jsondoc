@@ -164,7 +164,7 @@ compile_query(Query) when is_binary(Query) ->
 	end.
 	
 -spec query([jsondoc()] | jsondoc(), Query:: term()) -> term().
-query(Doc, Query) when is_list(Doc) ->
+query(Doc, Query) when is_list(Query) ->
 	jsondoc_query:select(Doc, Query);
 query(Array, Query) when is_list(Array) andalso is_list(Query) ->
 	jsondoc_query:select(Array, Query).
