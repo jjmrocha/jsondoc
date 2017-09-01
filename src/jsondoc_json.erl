@@ -235,8 +235,6 @@ encode_array([], _First, Acc) -> [$]|Acc].
 item_separator(false, Acc) -> [$,|Acc];
 item_separator(_, Acc) -> Acc.
 
-encode_float(Value) when Value < 0.0000000001 andalso Value > -0.0000000001 ->
-	[float_to_binary(Value)];
 encode_float(Value) ->
 	float_to_binary(Value, [{decimals, 10}, compact]).
 
